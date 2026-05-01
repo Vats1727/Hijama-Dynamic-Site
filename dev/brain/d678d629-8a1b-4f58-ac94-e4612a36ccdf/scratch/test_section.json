@@ -1,0 +1,17 @@
+{
+  "name": "Test Section",
+  "slug": "test_section",
+  "icon": "Shield",
+  "fields": [
+    {
+      "name": "Title",
+      "type": "text",
+      "required": true
+    },
+    {
+      "name": "Description",
+      "type": "textarea",
+      "required": false
+    }
+  ]
+}

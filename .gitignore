@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/vendor/
+
+# Local database
+*.db
+*.sqlite
+*.sqlite3
+
+# Build outputs
+dist/
+client/dist/
+
+# Env & local configs
+.env
+client/.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temp and OS files
+Thumbs.db
+.DS_Store
+*.tmp
+.tempmediaStorage/
+.gemini/
+dev/config.php
+
+# Ignore any kind of image files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
+*.bmp
+*.ico
+
+# Ignore all uploads
+**/public/upload/**/*
+**/upload/**/*

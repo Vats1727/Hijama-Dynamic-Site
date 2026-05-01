@@ -1,0 +1,18 @@
+{
+  "id": 6,
+  "name": "Test Section Updated",
+  "slug": "test_section",
+  "icon": "Zap",
+  "fields": [
+    {
+      "name": "Title",
+      "type": "text",
+      "required": true
+    },
+    {
+      "name": "Description",
+      "type": "textarea",
+      "required": false
+    }
+  ]
+}

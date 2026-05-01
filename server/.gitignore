@@ -1,0 +1,27 @@
+# Ignore any kind of image files inside the server folder
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
+*.bmp
+*.ico
+
+# Ignore everything in the upload/ directory
+public/upload/**/*
+upload/**/*
+**/upload/**/*
+
+# Dependencies
+vendor/
+
+# Database
+*.sqlite
+*.sqlite3
+database/*.sqlite
+database/*.sqlite3
+
+# Env and configs
+.env
+config.php
