@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import SectionTitle from '../common/SectionTitle';
 import ServiceCard from '../cards/ServiceCard';
 import { crudService } from '../../services/crud';
@@ -53,8 +53,8 @@ const Services = () => {
   const resolveImage = (imgPath) => {
     if (!imgPath) return '';
     if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) return imgPath;
-    if (imgPath.startsWith('upload/')) return `/server/${imgPath}`;
-    if (imgPath.startsWith('/upload/')) return `/server${imgPath}`;
+    if (imgPath.startsWith('upload/')) return `${import.meta.env.VITE_API_URL || '/server'}/${imgPath}`;
+    if (imgPath.startsWith('/upload/')) return `${import.meta.env.VITE_API_URL || '/server'}${imgPath}`;
     return imgPath;
   };
 
@@ -68,7 +68,7 @@ const Services = () => {
         className={isLoaded ? 'visible' : ''}
       />
       <p style={{ textAlign: 'center', color: 'var(--text-light)', fontSize: '0.85rem', marginTop: '12px', opacity: '0.7' }}>
-        👆 Click any card to see full details
+        ðŸ‘† Click any card to see full details
       </p>
       <div className={`services-grid reveal ${isLoaded ? 'visible' : ''}`}>
         {servicesList.map((s, i) => (
@@ -89,3 +89,4 @@ const Services = () => {
 };
 
 export default Services;
+

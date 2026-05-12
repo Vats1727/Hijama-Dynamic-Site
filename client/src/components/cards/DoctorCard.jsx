@@ -1,9 +1,9 @@
-import React from 'react';
+﻿import React from 'react';
 
 const renderAvatar = (avatarInput) => {
-  if (!avatarInput) return <div className="doctor-avatar">👨‍⚕️</div>;
+  if (!avatarInput) return <div className="doctor-avatar">ðŸ‘¨â€âš•ï¸</div>;
   if (avatarInput.startsWith('http://') || avatarInput.startsWith('https://') || avatarInput.startsWith('upload/') || avatarInput.startsWith('/upload/')) {
-    const src = avatarInput.startsWith('upload/') ? `/server/${avatarInput}` : (avatarInput.startsWith('/upload/') ? `/server${avatarInput}` : avatarInput);
+    const src = avatarInput.startsWith('upload/') ? `${import.meta.env.VITE_API_URL || '/server'}/${avatarInput}` : (avatarInput.startsWith('/upload/') ? `${import.meta.env.VITE_API_URL || '/server'}${avatarInput}` : avatarInput);
     return (
       <div className="doctor-avatar" style={{ overflow: 'hidden', padding: 0 }}>
         <img src={src} alt="Doctor" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -65,3 +65,4 @@ const DoctorCard = ({ avatar, name, title, bio, tags, experience, patients, rati
 };
 
 export default DoctorCard;
+

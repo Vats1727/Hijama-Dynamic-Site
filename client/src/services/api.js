@@ -1,9 +1,6 @@
 import axios from 'axios';
 
-const isLocal = typeof window !== 'undefined' && 
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-const API_BASE_URL = isLocal ? '/server' : (import.meta.env.VITE_API_URL || '/server');
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/server';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -27,7 +24,7 @@ export const getImageUrl = (path) => {
   if (path.startsWith('http')) return path;
   
   const fullPath = path.startsWith('upload/') ? path : `upload/${path}`;
-  const baseUrl = isLocal ? '/server' : (import.meta.env.VITE_API_URL || '/server');
+  const baseUrl = import.meta.env.VITE_API_URL || '/server';
   return `${baseUrl}/${fullPath}`;
 };
 

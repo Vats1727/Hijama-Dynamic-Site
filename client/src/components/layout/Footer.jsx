@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { crudService } from '../../services/crud';
 import * as LucideIcons from 'lucide-react';
 
 const renderLogo = (logoValue) => {
-  if (!logoValue) return <a href="#home" className="nav-logo">☽ Al-<span>Shifa</span></a>;
+  if (!logoValue) return <a href="#home" className="nav-logo">â˜½ Al-<span>Shifa</span></a>;
   if (logoValue.startsWith('upload/') || logoValue.startsWith('/upload/') || logoValue.startsWith('http')) {
-    const src = logoValue.startsWith('upload/') ? `/server/${logoValue}` : (logoValue.startsWith('/upload/') ? `/server${logoValue}` : logoValue);
+    const src = logoValue.startsWith('upload/') ? `${import.meta.env.VITE_API_URL || '/server'}/${logoValue}` : (logoValue.startsWith('/upload/') ? `${import.meta.env.VITE_API_URL || '/server'}${logoValue}` : logoValue);
     return (
       <a href="#home" className="nav-logo">
         <img src={src} alt="Al-Shifa" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
@@ -35,10 +35,10 @@ const renderSocialIcon = (nameOrEmoji, fallbackEmoji) => {
 
   // Safe fallback to exact standard emojis or string
   const lower = nameOrEmoji.toLowerCase();
-  if (lower.includes('fb') || lower.includes('face')) return '📘';
-  if (lower.includes('insta')) return '📸';
-  if (lower.includes('yt') || lower.includes('you')) return '▶️';
-  if (lower.includes('wa') || lower.includes('what')) return '💬';
+  if (lower.includes('fb') || lower.includes('face')) return 'ðŸ“˜';
+  if (lower.includes('insta')) return 'ðŸ“¸';
+  if (lower.includes('yt') || lower.includes('you')) return 'â–¶ï¸';
+  if (lower.includes('wa') || lower.includes('what')) return 'ðŸ’¬';
 
   return nameOrEmoji || fallbackEmoji;
 };
@@ -106,22 +106,22 @@ const Footer = () => {
           <div className="social-links">
             {footerData.facebook_link && (
               <a href={footerData.facebook_link} target="_blank" rel="noopener noreferrer" className="social-link">
-                {renderSocialIcon(footerData.facebook, '📘')}
+                {renderSocialIcon(footerData.facebook, 'ðŸ“˜')}
               </a>
             )}
             {footerData.instagram_link && (
               <a href={footerData.instagram_link} target="_blank" rel="noopener noreferrer" className="social-link">
-                {renderSocialIcon(footerData.instagram, '📸')}
+                {renderSocialIcon(footerData.instagram, 'ðŸ“¸')}
               </a>
             )}
             {footerData.youtube_link && (
               <a href={footerData.youtube_link} target="_blank" rel="noopener noreferrer" className="social-link">
-                {renderSocialIcon(footerData.youtube, '▶️')}
+                {renderSocialIcon(footerData.youtube, 'â–¶ï¸')}
               </a>
             )}
             {footerData.whatsapp_link && (
               <a href={footerData.whatsapp_link} target="_blank" rel="noopener noreferrer" className="social-link">
-                {renderSocialIcon(footerData.whatsapp, '💬')}
+                {renderSocialIcon(footerData.whatsapp, 'ðŸ’¬')}
               </a>
             )}
           </div>
@@ -161,7 +161,7 @@ const Footer = () => {
         </div>
       </div>
       <div className="footer-bottom">
-        <div className="footer-copy">{footerData.copyright || '© 2025 Al-Shifa Hijama Clinic. All rights reserved. Made with 🤍'}</div>
+        <div className="footer-copy">{footerData.copyright || 'Â© 2025 Al-Shifa Hijama Clinic. All rights reserved. Made with ðŸ¤'}</div>
         <div className="footer-bottom-links">
           {footerData.privacy_link && <a href={footerData.privacy_link} target="_blank" rel="noopener noreferrer">{footerData.privacy || 'Privacy'}</a>}
           {footerData.terms_link && <a href={footerData.terms_link} target="_blank" rel="noopener noreferrer">{footerData.terms_ || 'Terms'}</a>}
@@ -173,3 +173,4 @@ const Footer = () => {
 };
 
 export default Footer;
+

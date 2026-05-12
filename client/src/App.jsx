@@ -25,7 +25,7 @@ function App() {
 
   return (
     <ToastProvider>
-      <Router>
+      <Router basename={import.meta.env.VITE_ROUTER_BASE || '/'}>
         <Routes>
           {/* [START_PUBLIC_AUTH_ROUTES] */}
           <Route path="/login" element={<Login />} />
