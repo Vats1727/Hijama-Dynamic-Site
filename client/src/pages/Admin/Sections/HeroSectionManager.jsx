@@ -65,20 +65,20 @@ const HeroSectionManager = () => {
     return () => document.removeEventListener('click', handleOutsideClick);
   }, []);
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (isSaving) return;
+  const handleSave = async (e = null, isAuto = false) => {
+    if (e) e.preventDefault();
+    if (isSaving && !isAuto) return;
 
     // Validation: At a time only one field is allowed to apply in backround hero section
     const hasImage = background_image_ || (background_image_Preview && background_image_Preview.length > 0);
     const hasColor = background_color_picker_ && background_color_picker_.length > 0;
 
-    if (hasImage && hasColor) {
+    if (hasImage && hasColor && !isAuto) {
       alert('At a time, only one field is allowed to apply to the hero section background. If an image is already there, please remove the image first, or clear the color picker.');
       return;
     }
 
-    setIsSaving(true);
+    if (!isAuto) setIsSaving(true);
     // Use FormData for robust file handling
     const formData = new FormData();
     if (background_image_ && typeof background_image_ === 'object') formData.append('background_image_', background_image_);
@@ -102,21 +102,40 @@ const HeroSectionManager = () => {
     try {
       if (selectedId) {
         await crudService.update('hero_section', selectedId, formData);
-        showToast('Updated successfully');
+        if (!isAuto) showToast('Updated successfully');
+        // Real-time visual hot reload for iframe layouts!
+        window.dispatchEvent(new CustomEvent('api-data-updated'));
       } else {
         await crudService.create('hero_section', formData);
-        showToast('Created successfully');
+        if (!isAuto) showToast('Created successfully');
       }
-      setShowForm(false);
-      resetForm();
+      if (!isAuto) {
+        setShowForm(false);
+        resetForm();
+      }
       loadData();
     } catch (error) {
-      console.error('Save error detailed:', error);
-      showToast(error.message || 'Failed to save', 'error');
+      if (!isAuto) {
+        console.error('Save error detailed:', error);
+        showToast(error.message || 'Failed to save', 'error');
+      }
     } finally {
-      setIsSaving(false);
+      if (!isAuto) setIsSaving(false);
     }
   };
+
+  // Premium real-time heart beat auto-saver for Hero Section 💓
+  useEffect(() => {
+    if (!showForm || !selectedId) return;
+    const timer = setTimeout(() => {
+      handleSave(null, true);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [
+    background_color_picker_, badge_text, title_line_1, title_line_2_italic,
+    description, primary_button, outline_button, status, background_image_,
+    stat_1_num, stat_1_label, stat_2_num, stat_2_label, stat_3_num, stat_3_label, stat_4_num, stat_4_label
+  ]);
 
   const handleDelete = async (id) => {
     try {
@@ -266,7 +285,7 @@ const HeroSectionManager = () => {
           <h2 className="admin-card-title">Hero Section</h2>
           <p className="admin-card-subtitle">Manage your Hero Section section data here.</p>
         </div>
-        {!showForm && (
+        {!showForm && data.length === 0 && (
           <button className="admin-btn admin-btn-primary" onClick={() => { resetForm(); setShowForm(true); }}>
             <PlusCircle size={16} /> Add New
           </button>
@@ -442,108 +461,98 @@ const HeroSectionManager = () => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px' }}>
-              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setShowForm(false)} disabled={isSaving}>Cancel</button>
-              <button type="submit" className="admin-btn admin-btn-primary" disabled={isSaving}>
-                {isSaving ? (
-                  <><Loader2 size={16} className="animate-spin" /> Saving...</>
-                ) : 'Save Changes'}
-              </button>
+              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setShowForm(false)}>Dismiss</button>
+              {selectedId ? (
+                <div style={{ fontSize: '12px', color: '#10b981', fontWeight: '750', display: 'flex', alignItems: 'center', gap: '6px', background: '#ecfdf5', padding: '6px 12px', borderRadius: '20px', border: '1px solid #a7f3d0' }}>
+                  <LucideIcons.Sparkles size={14} className="animate-pulse" /> Auto-save active
+                </div>
+              ) : (
+                <button type="submit" className="admin-btn admin-btn-primary" disabled={isSaving}>
+                  {isSaving ? (
+                    <><Loader2 size={16} className="animate-spin" /> Creating...</>
+                  ) : 'Create & Initialize'}
+                </button>
+              )}
             </div>
           </form>
         </div>
       ) : (
-        <div className="admin-card">
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ position: 'relative', maxWidth: '300px' }}>
-              <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input 
-                type="text" 
-                className="admin-input" 
-                style={{ paddingLeft: '40px' }}
-                placeholder="Search..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
+          <div className="admin-vertical-card-grid">
+            {loading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '60px', color: '#64748b', gridColumn: '1/-1' }}>
+                <Loader2 size={24} className="animate-spin" style={{ marginRight: '10px' }} />
+                <span>Loading Hero configuration...</span>
+              </div>
+            ) : filteredData.length > 0 ? filteredData.map((item, idx) => (
+              <div className="admin-info-card clickable-setup-card" key={item.id} onClick={() => openEdit(item)} style={{ cursor: 'pointer', transition: 'transform 0.2s ease' }}>
+                <div className="admin-info-row">
+                  <span className="admin-info-label">Hero Visuals</span>
+                  <div className="admin-info-value">
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: item.background_color_picker_ || '#fff', border: '1px solid #cbd5e1' }} title={`BG Color: ${item.background_color_picker_ || '-'}`} />
+                      {item.background_image_ ? (
+                        <img src={getImageUrl(item.background_image_)} alt="BG" className="admin-card-thumb" style={{ width: '80px', height: '45px' }} />
+                      ) : <span style={{ fontSize: '12px', color: '#94a3b8' }}>No Image</span>}
+                    </div>
+                  </div>
+                </div>
+                <div className="admin-info-row">
+                  <span className="admin-info-label">Badge & Title</span>
+                  <div className="admin-info-value" style={{ flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                    {item.badge_text && <span style={{ fontSize: '11px', fontWeight: '600', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', marginBottom: '4px' }}>{item.badge_text}</span>}
+                    <strong style={{ fontWeight: '600' }}>{item.title_line_1 || '-'}</strong>
+                    {item.title_line_2_italic && <em style={{ color: '#64748b', fontSize: '13px' }}>{item.title_line_2_italic}</em>}
+                  </div>
+                </div>
+                <div className="admin-info-row">
+                  <span className="admin-info-label">Description</span>
+                  <div className="admin-info-value" style={{ fontSize: '13px', fontStyle: 'italic', color: '#475569' }}>
+                    {item.description ? (item.description.length > 60 ? item.description.substring(0, 60) + '...' : item.description) : '-'}
+                  </div>
+                </div>
+                <div className="admin-info-row">
+                  <span className="admin-info-label">Action Buttons</span>
+                  <div className="admin-info-value" style={{ gap: '8px' }}>
+                    {(() => { 
+                      try { 
+                        const p = typeof item.primary_button === 'string' ? JSON.parse(item.primary_button) : item.primary_button; 
+                        const o = typeof item.outline_button === 'string' ? JSON.parse(item.outline_button) : item.outline_button; 
+                        return (
+                          <>
+                            {p ? <span style={{ fontSize: '12px', background: '#4f46e5', color: '#fff', padding: '3px 8px', borderRadius: '6px' }}>{p.label || 'Primary'}</span> : null}
+                            {o ? <span style={{ fontSize: '12px', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px' }}>{o.label || 'Outline'}</span> : null}
+                            {!p && !o ? '-' : null}
+                          </>
+                        );
+                      } catch(e) { return '-'; } 
+                    })()}
+                  </div>
+                </div>
+                <div className="admin-info-row" style={{ backgroundColor: '#fafafa' }}>
+                  <span className="admin-info-label">Active Stats</span>
+                  <div className="admin-info-value" style={{ gridTemplateColumns: '1fr 1fr', display: 'grid', gap: '6px 12px', textAlign: 'left' }}>
+                    <div style={{ fontSize: '12px' }}><strong>{item.stat_1_num || '0'}</strong> <span style={{ color: '#64748b' }}>{item.stat_1_label}</span></div>
+                    <div style={{ fontSize: '12px' }}><strong>{item.stat_2_num || '0'}</strong> <span style={{ color: '#64748b' }}>{item.stat_2_label}</span></div>
+                    <div style={{ fontSize: '12px' }}><strong>{item.stat_3_num || '0'}</strong> <span style={{ color: '#64748b' }}>{item.stat_3_label}</span></div>
+                    <div style={{ fontSize: '12px' }}><strong>{item.stat_4_num || '0'}</strong> <span style={{ color: '#64748b' }}>{item.stat_4_label}</span></div>
+                  </div>
+                </div>
+                <div className="admin-info-row">
+                  <span className="admin-info-label">Status</span>
+                  <div className="admin-info-value">
+                    <span className={`admin-status-badge admin-status-${item.status?.toLowerCase() || 'active'}`}>
+                      {item.status || 'Active'}
+                    </span>
+                  </div>
+                </div>
 
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>background_image_</th>
-                  <th>Background Color Picker </th>
-                  <th>badge_text</th>
-                  <th>title_line_1</th>
-                  <th>title_line_2_italic</th>
-                  <th>description</th>
-                  <th>primary_button</th>
-                  <th>outline_button</th>
-                  <th>stat_1_num</th>
-                  <th>stat_1_label</th>
-                  <th>stat_2_num</th>
-                  <th>stat_2_label</th>
-                  <th>stat_3_num</th>
-                  <th>stat_3_label</th>
-                  <th>stat_4_num</th>
-                  <th>stat_4_label</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                   <tr>
-                     <td colSpan="100%" style={{ textAlign: 'center', padding: '40px' }}>
-                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', color: '#64748b' }}>
-                         <Loader2 size={20} className="animate-spin" />
-                         <span>Loading data...</span>
-                       </div>
-                     </td>
-                   </tr>
-                ) : filteredData.length > 0 ? filteredData.map((item, idx) => (
-                  <tr key={item.id}>
-                    <td>{idx + 1}</td>
-                    <td>{item.background_image_ ? <img src={getImageUrl(item.background_image_)} alt="Preview" style={{ height: '40px', borderRadius: '4px' }} /> : 'No Image'}</td>
-                    <td>{String(item.background_color_picker_ || '')}</td>
-                    <td>{String(item.badge_text || '')}</td>
-                    <td>{String(item.title_line_1 || '')}</td>
-                    <td>{String(item.title_line_2_italic || '')}</td>
-                    <td>{String(item.description || '')}</td>
-                    <td>{(() => { try { const link = typeof item.primary_button === 'string' ? JSON.parse(item.primary_button) : item.primary_button; return link ? <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{link.label || 'Link'}</a> : 'No Link'; } catch(e) { return 'Invalid Link'; } })()}</td>
-                    <td>{(() => { try { const link = typeof item.outline_button === 'string' ? JSON.parse(item.outline_button) : item.outline_button; return link ? <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{link.label || 'Link'}</a> : 'No Link'; } catch(e) { return 'Invalid Link'; } })()}</td>
-                    <td>{String(item.stat_1_num || '')}</td>
-                    <td>{String(item.stat_1_label || '')}</td>
-                    <td>{String(item.stat_2_num || '')}</td>
-                    <td>{String(item.stat_2_label || '')}</td>
-                    <td>{String(item.stat_3_num || '')}</td>
-                    <td>{String(item.stat_3_label || '')}</td>
-                    <td>{String(item.stat_4_num || '')}</td>
-                    <td>{String(item.stat_4_label || '')}</td>
-                    <td>
-                      <span className={`admin-status-badge admin-status-${item.status?.toLowerCase() || 'active'}`}>
-                        {item.status || 'Active'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="admin-actions">
-                        <button type="button" className="admin-action-btn" onClick={(e) => { e.stopPropagation(); openEdit(item); }} title="Edit"><Pencil size={14} /></button>
-                        <button type="button" className="admin-action-btn" style={{ color: '#ef4444' }} onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} title="Delete"><Trash2 size={14} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="100%" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-                      No data found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+              </div>
+            )) : (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: '#94a3b8', background: '#ffffff', borderRadius: '16px', border: '1px dashed #e2e8f0' }}>
+                No Hero configurations loaded yet.
+              </div>
+            )}
           </div>
-        </div>
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SectionTitle from '../common/SectionTitle';
 import BenefitCard from '../cards/BenefitCard';
 import { crudService } from '../../services/crud';
+import VisualEditorTrigger from '../VisualEditorTrigger';
 
 const Benefits = () => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -88,6 +89,14 @@ const Benefits = () => {
       }
     };
     fetchBenefitsData();
+    
+    const handleMsg = (event) => {
+      if (event.data && event.data.type === 'LIVE_DATA_REFRESH') {
+        fetchBenefitsData();
+      }
+    };
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
   }, []);
 
   const benefits = [
@@ -108,7 +117,8 @@ const Benefits = () => {
   ].filter(s => s.title && s.desc);
 
   return (
-    <section id="benefits">
+    <section id="benefits" style={{ position: 'relative' }}>
+      <VisualEditorTrigger sectionPath="/admin/why_hijama" />
       <div className="benefits-layout">
         <div>
           <SectionTitle 

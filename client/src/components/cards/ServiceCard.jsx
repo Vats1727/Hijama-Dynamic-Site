@@ -1,19 +1,5 @@
 import React, { useState } from 'react';
-import * as LucideIcons from 'lucide-react';
-
-const renderServiceIcon = (iconName, fallbackEmoji, size = 44) => {
-  if (!iconName) return fallbackEmoji || '';
-  if (LucideIcons[iconName]) {
-    const IconComponent = LucideIcons[iconName];
-    return <IconComponent size={size} />;
-  }
-  const cleanName = iconName.replace('Lucide', '');
-  if (LucideIcons[cleanName]) {
-    const IconComponent = LucideIcons[cleanName];
-    return <IconComponent size={size} />;
-  }
-  return iconName;
-};
+import { renderDynamicIcon } from '../../utils/IconRenderer';
 
 const ServiceCard = ({ icon, name, desc, price, details, image, bgColor }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -32,7 +18,7 @@ const ServiceCard = ({ icon, name, desc, price, details, image, bgColor }) => {
       <div className="card-inner">
         <div className="card-front">
           <div className="card-front-top">
-            <div className="service-icon">{renderServiceIcon(icon, '🩸', 44)}</div>
+            <div className="service-icon">{renderDynamicIcon(icon, 44, '🩸')}</div>
             <div className="service-name">{name}</div>
             <p className="service-desc">{desc}</p>
           </div>
@@ -53,7 +39,7 @@ const ServiceCard = ({ icon, name, desc, price, details, image, bgColor }) => {
               className="card-back-image-bg" 
               style={{ background: bgColor, backgroundImage: `url('${image}')` }}
             ></div>
-            <div className="card-back-image-icon">{renderServiceIcon(icon, '🩸', 50)}</div>
+            <div className="card-back-image-icon">{renderDynamicIcon(icon, 50, '🩸')}</div>
             <div className="card-back-image-overlay"></div>
           </div>
           <div className="card-back-body">

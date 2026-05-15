@@ -9,6 +9,7 @@ import {
 import api, { getImageUrl } from '../../../services/api';
 import { crudService } from '../../../services/crud';
 import { useToast } from '../../../components/Admin/ToastContext';
+import GlobalHeadingEditor from '../../../components/Admin/GlobalHeadingEditor';
 
 const DoctorsListManager = () => {
   const { showToast } = useToast();
@@ -57,14 +58,11 @@ const DoctorsListManager = () => {
     return () => document.removeEventListener('click', handleOutsideClick);
   }, []);
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (isSaving) return;
+  const handleSave = async (e = null, isAuto = false) => {
+    if (e) e.preventDefault();
+    if (isSaving && !isAuto) return;
 
-    // Validation
-
-
-    setIsSaving(true);
+    if (!isAuto) setIsSaving(true);
     // Use FormData for robust file handling
     const formData = new FormData();
     if (image_ && typeof image_ === 'object') formData.append('image_', image_);
@@ -80,21 +78,35 @@ const DoctorsListManager = () => {
     try {
       if (selectedId) {
         await crudService.update('doctors_list', selectedId, formData);
-        showToast('Updated successfully');
+        if (!isAuto) showToast('Updated successfully');
+        window.dispatchEvent(new CustomEvent('api-data-updated'));
       } else {
         await crudService.create('doctors_list', formData);
-        showToast('Created successfully');
+        if (!isAuto) showToast('Created successfully');
       }
-      setShowForm(false);
-      resetForm();
+      if (!isAuto) {
+        setShowForm(false);
+        resetForm();
+      }
       loadData();
     } catch (error) {
-      console.error('Save error detailed:', error);
-      showToast(error.message || 'Failed to save', 'error');
+      if (!isAuto) {
+        console.error('Save error detailed:', error);
+        showToast(error.message || 'Failed to save', 'error');
+      }
     } finally {
-      setIsSaving(false);
+      if (!isAuto) setIsSaving(false);
     }
   };
+
+  // Real-time heartbeat auto-save controller for practitioners 💓
+  useEffect(() => {
+    if (!showForm || !selectedId) return;
+    const timer = setTimeout(() => {
+      handleSave(null, true);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [name, title, bio, tags, experience, patients, rating, status, image_]);
 
   const handleDelete = async (id) => {
     try {
@@ -279,92 +291,151 @@ const DoctorsListManager = () => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px' }}>
-              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setShowForm(false)} disabled={isSaving}>Cancel</button>
-              <button type="submit" className="admin-btn admin-btn-primary" disabled={isSaving}>
-                {isSaving ? (
-                  <><Loader2 size={16} className="animate-spin" /> Saving...</>
-                ) : 'Save Changes'}
-              </button>
+              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setShowForm(false)}>Dismiss</button>
+              {selectedId ? (
+                <div style={{ fontSize: '12px', color: '#10b981', fontWeight: '750', display: 'flex', alignItems: 'center', gap: '6px', background: '#ecfdf5', padding: '6px 12px', borderRadius: '20px', border: '1px solid #a7f3d0' }}>
+                  <LucideIcons.Sparkles size={14} className="animate-pulse" /> Auto-save active
+                </div>
+              ) : (
+                <button type="submit" className="admin-btn admin-btn-primary" disabled={isSaving}>
+                  {isSaving ? (
+                    <><Loader2 size={16} className="animate-spin" /> Creating...</>
+                  ) : 'Create & Initialize'}
+                </button>
+              )}
             </div>
           </form>
         </div>
       ) : (
-        <div className="admin-card">
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ position: 'relative', maxWidth: '300px' }}>
-              <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input 
-                type="text" 
-                className="admin-input" 
-                style={{ paddingLeft: '40px' }}
-                placeholder="Search..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+        <>
+          <GlobalHeadingEditor slug="doctors_section" />
+          <div className="admin-card">
+
+          <div className="admin-vertical-card-grid">
+            {loading ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+                  <Loader2 size={20} className="animate-spin" />
+                  <span>Loading practitioner profiles...</span>
+                </div>
+              </div>
+            ) : filteredData.length > 0 ? filteredData.map((item) => (
+              <div className="admin-info-card clickable-setup-card" key={item.id} onClick={() => openEdit(item)} style={{ cursor: 'pointer', transition: 'transform 0.2s ease', position: 'relative' }}>
+                {/* Sleek Absolute Delete 'X' Icon at Top-Right */}
+                <button 
+                  type="button" 
+                  onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    color: '#64748b',
+                    border: '1px solid #e2e8f0',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: '100',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#ef4444'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                  title="Remove Doctor"
+                >
+                  <X size={13} strokeWidth={3} />
+                </button>
+                {/* Header Block */}
+                <div className="admin-info-row" style={{ background: '#f8fafc', margin: '-20px -20px 16px -20px', padding: '20px', borderTopLeftRadius: '12px', borderTopRightRadius: '12px', borderBottom: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%', paddingRight: '36px' }}>
+                    {item.image_ ? (
+                      <img src={getImageUrl(item.image_)} alt="Doctor Profile" style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                    ) : (
+                      <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#e0f2fe', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                        <LucideIcons.User size={22} style={{ color: '#0284c7' }} />
+                      </div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                        <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>{item.name || 'Unnamed Provider'}</h4>
+                        <span className={`admin-status-badge admin-status-${item.status?.toLowerCase() === 'active' ? 'active' : 'inactive'}`} style={{ fontSize: '9px', padding: '2px 6px' }}>
+                          {item.status || 'Active'}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#2563eb', fontWeight: '600' }}>{item.title || 'General Medicine'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mini Metrics Row */}
+                <div className="admin-info-row" style={{ background: '#fafafa', padding: '10px', borderRadius: '8px', border: '1px dashed #e2e8f0', margin: '0 0 16px 0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', width: '100%', gap: '8px', textAlign: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', tracking: '0.05em', color: '#64748b', fontWeight: '600' }}>Exp</div>
+                      <div style={{ fontSize: '13px', fontWeight: '800', color: '#1e293b', marginTop: '2px' }}>{item.experience || '0'} yrs</div>
+                    </div>
+                    <div style={{ borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', tracking: '0.05em', color: '#64748b', fontWeight: '600' }}>Clients</div>
+                      <div style={{ fontSize: '13px', fontWeight: '800', color: '#1e293b', marginTop: '2px' }}>{item.patients || '0'}+</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', tracking: '0.05em', color: '#64748b', fontWeight: '600' }}>Rating</div>
+                      <div style={{ fontSize: '13px', fontWeight: '800', color: '#ca8a04', marginTop: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
+                        <Star size={12} fill="currentColor" /> {item.rating || '5.0'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Professional Summary */}
+                <div className="admin-info-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                  <span className="admin-info-label" style={{ marginBottom: '4px' }}>Practitioner Biography</span>
+                  <div className="admin-info-value" style={{ color: '#475569', fontSize: '13px', fontStyle: 'italic', lineHeight: '1.5' }}>
+                    "{item.bio || 'No narrative entered.'}"
+                  </div>
+                </div>
+
+                {/* Specialties Subgrid / Text Tags */}
+                <div className="admin-info-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                  <span className="admin-info-label" style={{ marginBottom: '8px' }}>Focus Disciplines</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {(() => {
+                      let parsedTags = [];
+                      try {
+                        parsedTags = typeof item.tags === 'object' ? item.tags : JSON.parse(item.tags);
+                      } catch (e) {
+                        if (typeof item.tags === 'string') parsedTags = item.tags.split(',').map(s => s.trim());
+                      }
+                      
+                      if (Array.isArray(parsedTags) && parsedTags.filter(Boolean).length > 0) {
+                        return parsedTags.filter(Boolean).map((tag, idx) => (
+                          <span key={idx} style={{ display: 'inline-block', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>
+                            • {tag}
+                          </span>
+                        ));
+                      }
+                      return <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>No focus areas listed.</span>;
+                    })()}
+                  </div>
+                </div>
+
+
+
+
+              </div>
+            )) : (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: '#94a3b8', background: '#fff', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
+                No practitioner profiles identified. Click "Add New" to add a specialist.
+              </div>
+            )}
           </div>
 
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>image_</th>
-                  <th>name</th>
-                  <th>title</th>
-                  <th>bio</th>
-                  <th>tags</th>
-                  <th>experience</th>
-                  <th>Patients</th>
-                  <th>rating</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                   <tr>
-                     <td colSpan="100%" style={{ textAlign: 'center', padding: '40px' }}>
-                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', color: '#64748b' }}>
-                         <Loader2 size={20} className="animate-spin" />
-                         <span>Loading data...</span>
-                       </div>
-                     </td>
-                   </tr>
-                ) : filteredData.length > 0 ? filteredData.map((item, idx) => (
-                  <tr key={item.id}>
-                    <td>{idx + 1}</td>
-                    <td>{item.image_ ? <img src={getImageUrl(item.image_)} alt="Preview" style={{ height: '40px', borderRadius: '4px' }} /> : 'No Image'}</td>
-                    <td>{String(item.name || '')}</td>
-                    <td>{String(item.title || '')}</td>
-                    <td>{String(item.bio || '')}</td>
-                    <td>{Array.isArray(item.tags) ? item.tags.join(', ') : (typeof item.tags === 'string' ? item.tags : '')}</td>
-                    <td>{String(item.experience || '')}</td>
-                    <td>{String(item.patients || '')}</td>
-                    <td>{String(item.rating || '')}</td>
-                    <td>
-                      <span className={`admin-status-badge admin-status-${item.status?.toLowerCase() || 'active'}`}>
-                        {item.status || 'Active'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="admin-actions">
-                        <button type="button" className="admin-action-btn" onClick={(e) => { e.stopPropagation(); openEdit(item); }} title="Edit"><Pencil size={14} /></button>
-                        <button type="button" className="admin-action-btn" style={{ color: '#ef4444' }} onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} title="Delete"><Trash2 size={14} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="100%" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-                      No data found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
+        </>
       )}
     </div>
   );

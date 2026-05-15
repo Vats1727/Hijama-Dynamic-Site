@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SectionTitle from '../common/SectionTitle';
 import DoctorCard from '../cards/DoctorCard';
 import { crudService } from '../../services/crud';
+import VisualEditorTrigger from '../VisualEditorTrigger';
 
 const Doctors = () => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -39,10 +40,19 @@ const Doctors = () => {
       }
     };
     fetchDoctorsData();
+    
+    const handleMsg = (event) => {
+      if (event.data && event.data.type === 'LIVE_DATA_REFRESH') {
+        fetchDoctorsData();
+      }
+    };
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
   }, []);
 
   return (
-    <section id="doctors">
+    <section id="doctors" style={{ position: 'relative' }}>
+      <VisualEditorTrigger sectionPath="/admin/doctors_list" />
       <SectionTitle 
         tag={doctorsHeader.tag}
         title={doctorsHeader.title}

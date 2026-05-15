@@ -105,6 +105,29 @@
   box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); 
 }
 
+/* Global Search Box Premium Overlay */
+.admin-search-box-premium {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.admin-search-box-premium svg {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+  z-index: 2;
+  transition: color 0.2s ease;
+}
+.admin-search-box-premium .admin-input,
+.admin-search-box-premium input:not([type="color"]):not([type="checkbox"]):not([type="radio"]) {
+  padding-left: 44px !important; /* Safe clearance for wider desktop fields */
+}
+.admin-search-box-premium:focus-within svg {
+  color: #4f46e5;
+}
+
 .admin-textarea { 
   min-height: 140px; 
   resize: vertical; 
@@ -119,7 +142,7 @@
 .admin-table td { padding: 16px 24px; font-size: 15px; color: #334155; border-bottom: 1px solid #f8fafc; }
 .admin-table tr:hover td { background: #fbfcfe; }
 
-.admin-status-badge { padding: 6px 14px; border-radius: 9999px; font-size: 12px; font-weight: 700; }
+.admin-status-badge { padding: 3px 10px; border-radius: 9999px; font-size: 10.5px; font-weight: 750; display: inline-flex; align-items: center; line-height: 1; }
 .admin-status-active { background: #dcfce7; color: #166534; }
 .admin-status-inactive { background: #fee2e2; color: #991b1b; }
 
@@ -287,4 +310,143 @@
   background-position: right 16px center;
   background-size: 16px;
   padding-right: 48px;
+}
+
+@keyframes slideDownPremium {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Premium Vertical Info Cards */
+.admin-vertical-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .admin-vertical-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-info-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  border-color: #cbd5e1;
+}
+
+.admin-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  min-height: auto;
+}
+
+.admin-info-row:last-child {
+  border-bottom: none;
+}
+
+.admin-info-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  flex-shrink: 0;
+  margin-right: 20px;
+}
+
+.admin-info-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  word-break: break-word;
+  max-width: 70%;
+  line-height: 1.5;
+}
+
+.admin-card-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.admin-card-text-preview {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  display: inline-block;
+  font-size: 13.5px;
+}
+
+.admin-card-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-card-actions-wrap {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-card-circle-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-card-circle-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: scale(1.05);
+}
+
+.admin-card-circle-btn.danger:hover {
+  background: #fef2f2;
+  border-color: #fee2e2;
+  color: #ef4444;
 }

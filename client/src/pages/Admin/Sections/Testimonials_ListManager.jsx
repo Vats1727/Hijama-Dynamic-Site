@@ -9,6 +9,7 @@ import {
 import api, { getImageUrl } from '../../../services/api';
 import { crudService } from '../../../services/crud';
 import { useToast } from '../../../components/Admin/ToastContext';
+import GlobalHeadingEditor from '../../../components/Admin/GlobalHeadingEditor';
 
 const Testimonials_ListManager = () => {
   const { showToast } = useToast();
@@ -54,14 +55,11 @@ const Testimonials_ListManager = () => {
     return () => document.removeEventListener('click', handleOutsideClick);
   }, []);
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (isSaving) return;
+  const handleSave = async (e = null, isAuto = false) => {
+    if (e) e.preventDefault();
+    if (isSaving && !isAuto) return;
 
-    // Validation
-
-
-    setIsSaving(true);
+    if (!isAuto) setIsSaving(true);
     // Use FormData for robust file handling
     const formData = new FormData();
     formData.append('stars', stars);
@@ -74,21 +72,35 @@ const Testimonials_ListManager = () => {
     try {
       if (selectedId) {
         await crudService.update('testimonials_list', selectedId, formData);
-        showToast('Updated successfully');
+        if (!isAuto) showToast('Updated successfully');
+        window.dispatchEvent(new CustomEvent('api-data-updated'));
       } else {
         await crudService.create('testimonials_list', formData);
-        showToast('Created successfully');
+        if (!isAuto) showToast('Created successfully');
       }
-      setShowForm(false);
-      resetForm();
+      if (!isAuto) {
+        setShowForm(false);
+        resetForm();
+      }
       loadData();
     } catch (error) {
-      console.error('Save error detailed:', error);
-      showToast(error.message || 'Failed to save', 'error');
+      if (!isAuto) {
+        console.error('Save error detailed:', error);
+        showToast(error.message || 'Failed to save', 'error');
+      }
     } finally {
-      setIsSaving(false);
+      if (!isAuto) setIsSaving(false);
     }
   };
+
+  // Debounce auto-save tracking heartbeat for testimonials list 💓
+  useEffect(() => {
+    if (!showForm || !selectedId) return;
+    const timer = setTimeout(() => {
+      handleSave(null, true);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [stars, text, author, role, status, profile_image_]);
 
   const handleDelete = async (id) => {
     try {
@@ -238,86 +250,126 @@ const Testimonials_ListManager = () => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px' }}>
-              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setShowForm(false)} disabled={isSaving}>Cancel</button>
-              <button type="submit" className="admin-btn admin-btn-primary" disabled={isSaving}>
-                {isSaving ? (
-                  <><Loader2 size={16} className="animate-spin" /> Saving...</>
-                ) : 'Save Changes'}
-              </button>
+              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setShowForm(false)}>Dismiss</button>
+              {selectedId ? (
+                <div style={{ fontSize: '12px', color: '#10b981', fontWeight: '750', display: 'flex', alignItems: 'center', gap: '6px', background: '#ecfdf5', padding: '6px 12px', borderRadius: '20px', border: '1px solid #a7f3d0' }}>
+                  <LucideIcons.Sparkles size={14} className="animate-pulse" /> Auto-save active
+                </div>
+              ) : (
+                <button type="submit" className="admin-btn admin-btn-primary" disabled={isSaving}>
+                  {isSaving ? (
+                    <><Loader2 size={16} className="animate-spin" /> Creating...</>
+                  ) : 'Create & Initialize'}
+                </button>
+              )}
             </div>
           </form>
         </div>
       ) : (
-        <div className="admin-card">
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ position: 'relative', maxWidth: '300px' }}>
-              <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input 
-                type="text" 
-                className="admin-input" 
-                style={{ paddingLeft: '40px' }}
-                placeholder="Search..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+        <>
+          <GlobalHeadingEditor slug="testimonial_section" />
+          <div className="admin-card">
+
+          <div className="admin-vertical-card-grid">
+            {loading ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+                  <Loader2 size={20} className="animate-spin" />
+                  <span>Loading testimonials...</span>
+                </div>
+              </div>
+            ) : filteredData.length > 0 ? filteredData.map((item) => (
+              <div className="admin-info-card clickable-setup-card" key={item.id} onClick={() => openEdit(item)} style={{ cursor: 'pointer', transition: 'transform 0.2s ease', position: 'relative' }}>
+                {/* Sleek Absolute Delete 'X' Icon at Top-Right */}
+                <button 
+                  type="button" 
+                  onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    color: '#64748b',
+                    border: '1px solid #e2e8f0',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: '10',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#ef4444'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                  title="Delete Review"
+                >
+                  <X size={13} strokeWidth={3} />
+                </button>
+                
+                {/* Quote Block */}
+                <div className="admin-info-row" style={{ flexDirection: 'column', alignItems: 'stretch', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', paddingRight: '36px' }}>
+                    {/* Render dynamic Star row with rating scale */}
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '2px' }}>
+                        {[1, 2, 3, 4, 5].map((starNum) => (
+                          <Star 
+                            key={starNum} 
+                            size={13} 
+                            fill={starNum <= (Number(item.stars) || 5) ? '#facc15' : 'transparent'} 
+                            color={starNum <= (Number(item.stars) || 5) ? '#facc15' : '#cbd5e1'} 
+                          />
+                        ))}
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '750' }}>{item.stars || 5}/5</span>
+                    </div>
+                    <span className={`admin-status-badge admin-status-${item.status?.toLowerCase() === 'active' ? 'active' : 'inactive'}`}>
+                      {item.status || 'Active'}
+                    </span>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', fontStyle: 'italic', position: 'relative' }}>
+                    <span style={{ position: 'absolute', top: '4px', left: '8px', fontSize: '48px', fontFamily: 'serif', color: '#cbd5e1', lineHeight: 1, pointerEvents: 'none' }}>“</span>
+                    <p style={{ margin: 0, color: '#334155', fontSize: '13.5px', lineHeight: '1.6', textIndent: '14px', position: 'relative', zIndex: 1 }}>
+                      {item.text || 'No feedback transcript written.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Author Meta Info */}
+                <div className="admin-info-row" style={{ background: '#fafafa', margin: '0 -20px 16px -20px', padding: '12px 20px', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {item.profile_image_ ? (
+                      <img src={getImageUrl(item.profile_image_)} alt="Author profile" style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }} />
+                    ) : (
+                      <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }}>
+                        <LucideIcons.User size={18} style={{ color: '#94a3b8' }} />
+                      </div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>{item.author || 'Anonymous'}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>{item.role || 'Patient'}</div>
+                    </div>
+                  </div>
+                </div>
+
+
+
+
+
+              </div>
+            )) : (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: '#94a3b8', background: '#fff', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
+                No testimonials found. Click "Add New" to start building social proof.
+              </div>
+            )}
           </div>
 
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>stars</th>
-                  <th>text</th>
-                  <th>author</th>
-                  <th>role</th>
-                  <th>profile_image_</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                   <tr>
-                     <td colSpan="100%" style={{ textAlign: 'center', padding: '40px' }}>
-                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', color: '#64748b' }}>
-                         <Loader2 size={20} className="animate-spin" />
-                         <span>Loading data...</span>
-                       </div>
-                     </td>
-                   </tr>
-                ) : filteredData.length > 0 ? filteredData.map((item, idx) => (
-                  <tr key={item.id}>
-                    <td>{idx + 1}</td>
-                    <td>{String(item.stars || '')}</td>
-                    <td>{String(item.text || '')}</td>
-                    <td>{String(item.author || '')}</td>
-                    <td>{String(item.role || '')}</td>
-                    <td>{item.profile_image_ ? <img src={getImageUrl(item.profile_image_)} alt="Preview" style={{ height: '40px', borderRadius: '4px' }} /> : 'No Image'}</td>
-                    <td>
-                      <span className={`admin-status-badge admin-status-${item.status?.toLowerCase() || 'active'}`}>
-                        {item.status || 'Active'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="admin-actions">
-                        <button type="button" className="admin-action-btn" onClick={(e) => { e.stopPropagation(); openEdit(item); }} title="Edit"><Pencil size={14} /></button>
-                        <button type="button" className="admin-action-btn" style={{ color: '#ef4444' }} onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} title="Delete"><Trash2 size={14} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="100%" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-                      No data found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
+        </>
       )}
     </div>
   );

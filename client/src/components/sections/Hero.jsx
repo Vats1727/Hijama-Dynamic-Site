@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import { crudService } from '../../services/crud';
 import { getImageUrl } from '../../services/api';
+import VisualEditorTrigger from '../VisualEditorTrigger';
 
 const Hero = () => {
   const [heroData, setHeroData] = useState({
@@ -90,6 +91,14 @@ const Hero = () => {
       }
     };
     fetchHeroData();
+    
+    const handleMsg = (event) => {
+      if (event.data && event.data.type === 'LIVE_DATA_REFRESH') {
+        fetchHeroData();
+      }
+    };
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
   }, []);
 
   const parseBtn = (btnData) => {
@@ -130,7 +139,7 @@ const Hero = () => {
   const bgUrl = heroData.background_image_ ? getImageUrl(heroData.background_image_) : '';
   const bgColor = heroData.background_color_picker_ || '';
 
-  const sectionStyle = {};
+  const sectionStyle = { position: 'relative' };
   if (bgUrl) {
     sectionStyle.backgroundImage = `linear-gradient(rgba(26, 18, 9, 0.75), rgba(26, 18, 9, 0.75)), url("${bgUrl}")`;
     sectionStyle.backgroundSize = 'cover';
@@ -143,6 +152,7 @@ const Hero = () => {
 
   return (
     <section id="home" style={sectionStyle}>
+      <VisualEditorTrigger sectionPath="/admin/hero_section" />
       <div className="hero-pattern"></div>
       <div className="hero-glow"></div>
       <div className="hero-glow2"></div>

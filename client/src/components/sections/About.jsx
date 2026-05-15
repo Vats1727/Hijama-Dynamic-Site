@@ -1,22 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import SectionTitle from '../common/SectionTitle';
 import { crudService } from '../../services/crud';
-import * as LucideIcons from 'lucide-react';
-
-const renderAboutIcon = (iconName, fallbackEmoji, isLarge = false) => {
-  if (!iconName) return fallbackEmoji || '';
-  const size = isLarge ? 80 : 24;
-  if (LucideIcons[iconName]) {
-    const IconComponent = LucideIcons[iconName];
-    return <IconComponent size={size} />;
-  }
-  const cleanName = iconName.replace('Lucide', '');
-  if (LucideIcons[cleanName]) {
-    const IconComponent = LucideIcons[cleanName];
-    return <IconComponent size={size} />;
-  }
-  return iconName;
-};
+import { renderDynamicIcon } from '../../utils/IconRenderer';
+import VisualEditorTrigger from '../VisualEditorTrigger';
 
 const About = () => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -74,6 +60,14 @@ const About = () => {
       }
     };
     fetchAboutData();
+    
+    const handleMsg = (event) => {
+      if (event.data && event.data.type === 'LIVE_DATA_REFRESH') {
+        fetchAboutData();
+      }
+    };
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
   }, []);
 
   const features = [
@@ -104,7 +98,8 @@ const About = () => {
   };
 
   return (
-    <section id="about">
+    <section id="about" style={{ position: 'relative' }}>
+      <VisualEditorTrigger sectionPath="/admin/about_section" />
       <SectionTitle 
         tag={aboutData.tag}
         title={aboutData.title}
@@ -114,7 +109,7 @@ const About = () => {
       <div className="about-grid">
         <div className={`about-visual reveal ${isLoaded ? 'visible' : ''}`}>
           <div className="about-visual-inner">
-            <span className="about-visual-icon">{renderAboutIcon(aboutData.visual_icon, "⚕️", true)}</span>
+            <span className="about-visual-icon">{renderDynamicIcon(aboutData.visual_icon, 80, "⚕️")}</span>
             <div className="about-visual-text">
               {formatQuoteWithBr(aboutData.quote_text)}
             </div>
@@ -131,7 +126,7 @@ const About = () => {
             <div className="about-features">
               {features.map((f, i) => (
                 <div key={i} className="about-feature">
-                  <div className="feature-icon">{renderAboutIcon(f.icon, "🏥")}</div>
+                  <div className="feature-icon">{renderDynamicIcon(f.icon, 24, "🏥")}</div>
                   <div>
                     <div className="feature-title">{f.title}</div>
                     <div className="feature-desc">{f.desc}</div>

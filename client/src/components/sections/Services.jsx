@@ -1,7 +1,8 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import SectionTitle from '../common/SectionTitle';
 import ServiceCard from '../cards/ServiceCard';
 import { crudService } from '../../services/crud';
+import VisualEditorTrigger from '../VisualEditorTrigger';
 
 const Services = () => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -39,6 +40,14 @@ const Services = () => {
       }
     };
     fetchServicesData();
+    
+    const handleMsg = (event) => {
+      if (event.data && event.data.type === 'LIVE_DATA_REFRESH') {
+        fetchServicesData();
+      }
+    };
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
   }, []);
 
   const parseDetails = (detailsInput) => {
@@ -59,7 +68,8 @@ const Services = () => {
   };
 
   return (
-    <section id="services">
+    <section id="services" style={{ position: 'relative' }}>
+      <VisualEditorTrigger sectionPath="/admin/service_list" />
       <SectionTitle 
         tag={servicesHeader.tag}
         title={servicesHeader.title}
@@ -67,9 +77,6 @@ const Services = () => {
         centered
         className={isLoaded ? 'visible' : ''}
       />
-      <p style={{ textAlign: 'center', color: 'var(--text-light)', fontSize: '0.85rem', marginTop: '12px', opacity: '0.7' }}>
-        ðŸ‘† Click any card to see full details
-      </p>
       <div className={`services-grid reveal ${isLoaded ? 'visible' : ''}`}>
         {servicesList.map((s, i) => (
           <ServiceCard 

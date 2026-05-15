@@ -1,20 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import useNavbarScroll from '../../hooks/useNavbarScroll';
 import { crudService } from '../../services/crud';
-import * as LucideIcons from 'lucide-react';
+import { renderDynamicIcon } from '../../utils/IconRenderer';
+import VisualEditorTrigger from '../VisualEditorTrigger';
 
 const renderNavIcon = (iconName, fallbackEmoji) => {
-  if (!iconName) return <span className="logo-icon">{fallbackEmoji}</span>;
-  if (LucideIcons[iconName]) {
-    const IconComponent = LucideIcons[iconName];
-    return <span className="logo-icon"><IconComponent size={24} /></span>;
-  }
-  const cleanName = iconName.replace('Lucide', '');
-  if (LucideIcons[cleanName]) {
-    const IconComponent = LucideIcons[cleanName];
-    return <span className="logo-icon"><IconComponent size={24} /></span>;
-  }
-  return <span className="logo-icon">{iconName}</span>;
+  return <span className="logo-icon">{renderDynamicIcon(iconName, 24, fallbackEmoji)}</span>;
 };
 
 const renderHeading = (heading) => {
@@ -65,6 +56,14 @@ const Navbar = () => {
       }
     };
     fetchNavData();
+    
+    const handleMsg = (event) => {
+      if (event.data && event.data.type === 'LIVE_DATA_REFRESH') {
+        fetchNavData();
+      }
+    };
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
   }, []);
 
   const toggleMenu = () => {
@@ -104,7 +103,8 @@ const Navbar = () => {
 
   return (
     <>
-      <nav id="navbar" className={scrolled ? 'scrolled' : ''}>
+      <nav id="navbar" className={scrolled ? 'scrolled' : ''} style={{ position: 'relative' }}>
+        <VisualEditorTrigger sectionPath="/admin/navigation_bar" style={{ top: '75px', right: '20px' }} />
         <a href="#home" className="nav-logo">
           {renderNavIcon(navData.site_icon_, "☽")}
           {renderHeading(navData.site_heading) || <>Al-<span>Shifa</span></>}

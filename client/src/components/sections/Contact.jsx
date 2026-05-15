@@ -1,20 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import SectionTitle from '../common/SectionTitle';
 import { crudService } from '../../services/crud';
-import * as LucideIcons from 'lucide-react';
+import { renderDynamicIcon } from '../../utils/IconRenderer';
+import VisualEditorTrigger from '../VisualEditorTrigger';
 
 const renderContactIcon = (iconName, fallbackEmoji) => {
-  if (!iconName) return <span className="contact-icon">{fallbackEmoji}</span>;
-  if (LucideIcons[iconName]) {
-    const IconComponent = LucideIcons[iconName];
-    return <span className="contact-icon"><IconComponent size={24} /></span>;
-  }
-  const cleanName = iconName.replace('Lucide', '');
-  if (LucideIcons[cleanName]) {
-    const IconComponent = LucideIcons[cleanName];
-    return <span className="contact-icon"><IconComponent size={24} /></span>;
-  }
-  return <span className="contact-icon">{iconName}</span>;
+  return <span className="contact-icon">{renderDynamicIcon(iconName, 24, fallbackEmoji)}</span>;
 };
 
 const Contact = () => {
@@ -115,6 +106,14 @@ const Contact = () => {
       }
     };
     loadContactData();
+    
+    const handleMsg = (event) => {
+      if (event.data && event.data.type === 'LIVE_DATA_REFRESH') {
+        loadContactData();
+      }
+    };
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
   }, []);
 
   const handleChange = (e) => {
@@ -206,7 +205,8 @@ const Contact = () => {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <section id="contact">
+    <section id="contact" style={{ position: 'relative' }}>
+      <VisualEditorTrigger sectionPath="/admin/book_your_appointment" />
       <SectionTitle 
         tag={contactData.tag}
         title={contactData.title}

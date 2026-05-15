@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SectionTitle from '../common/SectionTitle';
 import TestimonialCard from '../cards/TestimonialCard';
 import { crudService } from '../../services/crud';
+import VisualEditorTrigger from '../VisualEditorTrigger';
 
 const Testimonials = () => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -35,10 +36,19 @@ const Testimonials = () => {
       }
     };
     fetchTestimonials();
+    
+    const handleMsg = (event) => {
+      if (event.data && event.data.type === 'LIVE_DATA_REFRESH') {
+        fetchTestimonials();
+      }
+    };
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
   }, []);
 
   return (
-    <section id="testimonials">
+    <section id="testimonials" style={{ position: 'relative' }}>
+      <VisualEditorTrigger sectionPath="/admin/testimonials_list" />
       <SectionTitle 
         tag={headerData.tag}
         title={headerData.title}

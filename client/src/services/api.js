@@ -18,6 +18,18 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Intercept successful mutating requests to trigger preview reloads
+api.interceptors.response.use(
+  (response) => {
+    const method = response.config?.method?.toUpperCase();
+    if (method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+      window.dispatchEvent(new CustomEvent('api-data-updated', { detail: { method, url: response.config.url } }));
+    }
+    return response;
+  },
+  (error) => Promise.reject(error)
+);
+
 export const getImageUrl = (path) => {
   if (!path) return '';
   if (path.startsWith('data:')) return path;
