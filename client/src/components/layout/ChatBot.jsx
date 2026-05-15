@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ChatMessage from '../ui/ChatMessage';
 import QuickReply from '../ui/QuickReply';
+import { crudService } from '../../services/crud';
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,22 +12,119 @@ const ChatBot = () => {
   const [showBadge, setShowBadge] = useState(true);
   const messagesEndRef = useRef(null);
 
-  const botResponses = {
-    'what is hijama': "Hijama (حجامة) is the Islamic practice of wet cupping therapy. It involves creating suction on the skin and making small incisions to draw out stagnant blood and toxins. The Prophet Muhammad ﷺ recommended it as one of the best forms of medical treatment. Modern research confirms its benefits for pain relief, circulation, and detoxification. 🌙",
-    'hijama': "Hijama is wet cupping therapy — an ancient Sunnah practice that removes stagnant blood and toxins from the body. It promotes healing, reduces pain, boosts immunity, and restores energy flow. Our certified practitioners follow strict sterile protocols for your safety. ✨",
-    'services': "We offer 6 main services:\n\n🩸 Wet Cupping (Hijama) — from ₹800\n🔵 Dry Cupping — from ₹500\n🔥 Fire Cupping — from ₹600\n💆 Massage Cupping — from ₹700\n🌿 Herbal Cupping — from ₹900\n👶 Paediatric Cupping — from ₹450\n\nWould you like to know more about any specific service?",
-    'price': "Our services start from:\n• Wet Cupping: ₹800\n• Dry Cupping: ₹500\n• Fire Cupping: ₹600\n• Massage Cupping: ₹700\n• Herbal Cupping: ₹900\n• Paediatric: ₹450\n\nFinal pricing depends on the number of cups and session duration. Shall I help you book an appointment?",
-    'book': "To book an appointment, you can:\n\n📋 Fill the form in the Contact section below ↓\n📞 Call us: +91 98765 43210\n📧 Email: appointments@alshifaclinic.com\n\nWe recommend booking 1-2 days in advance. Shall I scroll you to the booking form?",
-    'appointment': "I'd be happy to help you book! Please scroll down to the 'Book Your Appointment' section, or call us at +91 98765 43210. We're available Sat–Thu 9AM–8PM, and Fri 2PM–8PM. 📅",
-    'hours': "🕐 Our clinic hours are:\n\nSaturday – Thursday: 9:00 AM – 8:00 PM\nFriday: 2:00 PM – 8:00 PM (After Jumu'ah prayers)\n\nWe're closed on certain Islamic holidays. Call ahead to confirm on public holidays.",
-    'opening': "🕐 Clinic Hours:\n• Saturday – Thursday: 9 AM – 8 PM\n• Friday: 2 PM – 8 PM\n\nBest time to call: 10 AM – 12 PM for quick booking.",
-    'doctor': "We have 4 expert doctors:\n\n👨‍⚕️ Dr. Ahmed Al-Farsi – Chief Practitioner (15+ yrs)\n👩‍⚕️ Dr. Fatima Siddiqui – Women's Specialist (10+ yrs)\n👨‍⚕️ Dr. Yusuf Hassan – Sports & Rehab (8+ yrs)\n👩‍⚕️ Dr. Maryam Ansari – Paediatric Care (7+ yrs)\n\nFemale patients can specifically request our female doctors. Would you like to know more about any doctor?",
-    'pain': "Hijama is highly effective for pain management! It's commonly used for:\n\n✅ Back & neck pain\n✅ Migraines & headaches\n✅ Joint & knee pain\n✅ Shoulder stiffness\n✅ Sciatica\n✅ Sports injuries\n\nDr. Ahmed (pain) and Dr. Yusuf (sports injuries) specialise in pain-related conditions. Shall I help you book a consultation?",
-    'safe': "Yes, Hijama at Al-Shifa is completely safe! 🛡️\n\n✅ Single-use disposable equipment\n✅ Certified medical practitioners\n✅ Sterile, clinical environment\n✅ Pre-session health screening\n✅ Post-care instructions provided\n\nWe follow international hygiene standards. Any concerns? Feel free to ask!",
-    'sunnah': "📅 Recommended Sunnah dates for Hijama (Islamic lunar calendar):\n\n🌙 17th, 19th, and 21st of the lunar month\n\nThe Prophet ﷺ said: 'The best treatment is cupping.' We schedule sessions on these dates — ask reception for the next available Sunnah date when booking!",
-    'location': "📍 We are located at:\n\n123 Al-Shifa Plaza\nNear Jama Masjid\nAhmedabad, Gujarat 380001\n\nEasy parking available. Close to public transport. Reply 'hours' for opening times.",
-    'contact': "You can reach us through:\n\n📞 Phone: +91 98765 43210\n📧 Email: info@alshifaclinic.com\n📍 Visit: 123 Al-Shifa Plaza, Ahmedabad\n\nOr just scroll down to fill the booking form on this page! 📋",
-    'women': "Yes! We have dedicated services and a private room for female patients. 🌸\n\nDr. Fatima Siddiqui and Dr. Maryam Ansari are our female practitioners specialising in:\n• Women's hormonal health\n• Fertility support\n• Menstrual concerns\n• General wellness\n\nAll female sessions are conducted in a fully private setting.",
+  // Dynamic database states
+  const [services, setServices] = useState([]);
+  const [contactData, setContactData] = useState(null);
+  const [doctors, setDoctors] = useState([]);
+
+  // Fetch dynamic data from system API
+  const fetchData = async () => {
+    try {
+      const [serv, contact, doc] = await Promise.all([
+        crudService.getAll('service_list'),
+        crudService.getAll('book_your_appointment'),
+        crudService.getAll('doctors_list')
+      ]);
+
+      if (Array.isArray(serv)) {
+        setServices(serv.filter(s => s.status?.toLowerCase() === 'active'));
+      }
+      if (Array.isArray(contact)) {
+        const activeContact = contact.find(c => c.status === 'Active') || contact[0];
+        setContactData(activeContact || null);
+      }
+      if (Array.isArray(doc)) {
+        setDoctors(doc.filter(d => d.status?.toLowerCase() === 'active'));
+      }
+    } catch (error) {
+      console.error('ChatBot data loading error:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+
+    // Real-time hot swapping via editor events
+    const handleMsg = (event) => {
+      if (event.data && event.data.type === 'LIVE_DATA_REFRESH') {
+        fetchData();
+      }
+    };
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
+  }, []);
+
+  const getDynamicBotResponses = () => {
+    // Adaptive Dynamic Fallbacks
+    let servicesText = "We offer premium, specialized cupping therapy services at affordable rates. Please let me know if you would like to know more!";
+    let pricesText = "Our services are competitively priced. Standard cupping sessions are fully tailored to each patient's specific condition and health history.";
+    let bookingText = "To book an appointment, you can fill the form in the Contact section below! We recommend booking in advance.";
+    let appointmentText = "I'd be happy to help you book! Please scroll down to the 'Book Your Appointment' section.";
+    let hoursText = "🕐 Our clinic hours are updated regularly. Please visit our contact section for exact timing details.";
+    let doctorsText = "We have expert, certified practitioners to care for your health and wellness.";
+    let contactText = "You can reach us through our contact section on this page! Just scroll down to fill the booking form.";
+    let locationText = "📍 Please refer to our Contact section below for our full address and clinic location map.";
+
+    // 1. Fill Dynamic Services & Prices
+    if (services.length > 0) {
+      const list = services.map(s => `• ${s.name}${s.price ? ` — from ${s.price}` : ''}`).join('\n');
+      servicesText = `We offer ${services.length} active services:\n\n${list}\n\nWould you like to know more about any specific service?`;
+      
+      const priceList = services.map(s => `• ${s.name}: ${s.price || 'Consultation Required'}`).join('\n');
+      pricesText = `Our services start from:\n${priceList}\n\nFinal pricing depends on the number of cups and treatment. Shall I help you book an appointment?`;
+    }
+
+    // 2. Fill Dynamic Contacts & Hours
+    if (contactData) {
+      const p1 = contactData.phone;
+      const p2 = contactData.phone_2;
+      const em = contactData.email;
+      const addr = contactData.address;
+      const hours = contactData.clinic_hours;
+      
+      let contactDetails = [];
+      if (p1) contactDetails.push(`📞 Call us: ${p1}`);
+      if (p2) contactDetails.push(`📞 Alt Phone: ${p2}`);
+      if (em) contactDetails.push(`📧 Email: ${em}`);
+
+      if (contactDetails.length > 0) {
+        bookingText = `To book an appointment, you can:\n\n📋 Fill the form below ↓\n${contactDetails.join('\n')}\n\nShall I scroll you to the booking form?`;
+        appointmentText = `I'd be happy to help you book! Please scroll down to the 'Book Your Appointment' section${p1 ? `, or call us at ${p1}` : ''}. 📅`;
+        contactText = `You can reach us through:\n\n${contactDetails.join('\n')}${addr ? `\n📍 Visit: ${addr}` : ''}\n\nOr just scroll down to fill the booking form on this page! 📋`;
+      }
+
+      if (hours) {
+        hoursText = `🕐 Our clinic hours are:\n\n${hours}\n\nWe recommend calling ahead on public holidays to confirm timings.`;
+      }
+
+      if (addr) {
+        locationText = `📍 We are located at:\n\n${addr}\n\nEasy parking available. Close to public transport. Reply 'hours' for opening times.`;
+      }
+    }
+
+    // 3. Fill Dynamic Doctors List
+    if (doctors.length > 0) {
+      const docList = doctors.map(d => `👤 ${d.name} – ${d.title || 'Specialist'}${d.experience ? ` (${d.experience})` : ''}`).join('\n');
+      doctorsText = `We have ${doctors.length} expert practitioners available:\n\n${docList}\n\nFemale patients can specifically request our female doctors for sessions. Would you like to know more about any doctor?`;
+    }
+
+    return {
+      'what is hijama': "Hijama (حجامة) is the Islamic practice of wet cupping therapy. It involves creating suction on the skin and making small incisions to draw out stagnant blood and toxins. The Prophet Muhammad ﷺ recommended it as one of the best forms of medical treatment. Modern research confirms its benefits for pain relief, circulation, and detoxification. 🌙",
+      'hijama': "Hijama is wet cupping therapy — an ancient Sunnah practice that removes stagnant blood and toxins from the body. It promotes healing, reduces pain, boosts immunity, and restores energy flow. Our certified practitioners follow strict sterile protocols for your safety. ✨",
+      'services': servicesText,
+      'price': pricesText,
+      'book': bookingText,
+      'appointment': appointmentText,
+      'hours': hoursText,
+      'opening': hoursText,
+      'doctor': doctorsText,
+      'pain': "Hijama is highly effective for pain management! It's commonly used for:\n\n✅ Back & neck pain\n✅ Migraines & headaches\n✅ Joint & knee pain\n✅ Shoulder stiffness\n✅ Sciatica\n✅ Sports injuries\n\nShall I help you book a consultation?",
+      'safe': "Yes, Hijama at Al-Shifa is completely safe! 🛡️\n\n✅ Single-use disposable equipment\n✅ Certified medical practitioners\n✅ Sterile, clinical environment\n✅ Pre-session health screening\n✅ Post-care instructions provided\n\nWe follow international hygiene standards. Any concerns? Feel free to ask!",
+      'sunnah': "📅 Recommended Sunnah dates for Hijama (Islamic lunar calendar):\n\n🌙 17th, 19th, and 21st of the lunar month\n\nThe Prophet ﷺ said: 'The best treatment is cupping.' We schedule sessions on these dates — ask reception for the next available Sunnah date when booking!",
+      'location': locationText,
+      'contact': contactText,
+      'women': "Yes! We have dedicated services and private rooms for female patients. 🌸 All female sessions are conducted in a fully private setting with our experienced female practitioners.",
+    };
   };
 
   const scrollToBottom = () => {
@@ -49,8 +147,11 @@ const ChatBot = () => {
     setMessages(prev => [...prev, { type: 'user', text: userMsg }]);
     setInputValue('');
 
+    const botResponses = getDynamicBotResponses();
+    const fallbackPhone = contactData?.phone || "+91 98765 43210";
+
     setTimeout(() => {
-      let botReply = "I'm not sure about that. Could you please rephrase? Or call us at +91 98765 43210 for immediate assistance! 😊";
+      let botReply = `I'm not sure about that. Could you please rephrase? Or call us at ${fallbackPhone} for immediate assistance! 😊`;
       const m = userMsg.toLowerCase();
       
       for (const key in botResponses) {
